@@ -17,7 +17,7 @@ export default Vue.extend({
 
 <style lang="scss">
   .log {
-    &__row {
+    &__record {
       font-size: .75rem;
     }
     &__date {

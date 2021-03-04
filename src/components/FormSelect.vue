@@ -9,10 +9,12 @@
     <div class="arrow__wrapper">
       <select
         id="container-select"
+        v-model="container"
         name="container-select"
         class="form__select"
         type="text"
         required
+        @change="$emit('update-container', container)"
       >
         <option value="containerA">Container A</option>
         <option value="containerB">Container B</option>
@@ -29,6 +31,16 @@ import Vue from 'vue';
 
 export default Vue.extend({
   name: 'FormSelect',
+  data() {
+    return {
+      container: '',
+    };
+  },
+  mounted() {
+    (document.getElementById('form') as HTMLFormElement).addEventListener('reset', () => {
+      this.container = '';
+    });
+  },
 });
 </script>
 

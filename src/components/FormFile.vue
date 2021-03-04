@@ -1,14 +1,26 @@
 <template>
-  <div>
-    <label for="object-file">
+  <div class="file-wrapper">
+    <label for="image-file">
       <input
-        id="object-file"
-        name="object-file"
+        id="image-file"
+        name="image-file"
         type="file"
+        ref="image-file"
         class="form__file"
+        multiple
         required
-        multiple>
+        accept=".svg,.png"
+        @change="uploadImages"
+      >
     </label >
+    <div class="file-error">
+      <span v-if="sizeError" >
+        * File size too large.
+      </span>
+      <span v-if="typeError" >
+        * File type is not allowed.
+      </span>
+    </div>
   </div>
 </template>
 
@@ -17,10 +29,64 @@ import Vue from 'vue';
 
 export default Vue.extend({
   name: 'FormFile',
+  data() {
+    return {
+      files: [] as File[],
+      typeError: false,
+      sizeError: false,
+    };
+  },
+  computed: {
+    inputEl(): HTMLInputElement {
+      return document.getElementById('image-file') as HTMLInputElement;
+    },
+  },
+  methods: {
+    uploadImages() {
+      if (this.inputEl.files !== null) {
+        this.files = Array.from(this.inputEl.files);
+        this.$emit('update-error-status', { fileError: false });
+        this.sizeError = false;
+        this.typeError = false;
+        this.files.forEach((file) => {
+          this.validate(file);
+        });
+      }
+      if (this.sizeError || this.typeError) {
+        this.$emit('update-error-status', { fileError: true });
+      } else {
+        this.$emit('upload-images', this.files);
+      }
+    },
+    validate(file: File) {
+      const fileName: string = file.name;
+      const fileSize: number = file.size;
+      const allowedExtensions = ['svg', 'png'];
+      const sizeLimit = 500000;
+      const fileExtension: string = fileName.split('.').pop() ?? '';
+      if (!allowedExtensions.includes(fileExtension)) {
+        this.typeError = true;
+      }
+      if (fileSize > sizeLimit) {
+        this.sizeError = true;
+      }
+    },
+  },
 });
+
 </script>
 
 <style lang="scss">
+.file-wrapper {
+  position: relative;
+}
+.file-error {
+  position: absolute;
+  right: -3rem ;
+  bottom: -.5rem;
+  color: #f00;
+  font-size: .75rem;
+}
 .form__file::-webkit-file-upload-button {
   display: none;
 }
@@ -43,6 +109,7 @@ export default Vue.extend({
     width: 10rem;
     background: #0094FF;
     color: #fff;
+    margin-right: .5rem;
   }
   &:hover::before {
     cursor: pointer;
