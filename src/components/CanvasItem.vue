@@ -1,13 +1,25 @@
 <template>
-  <canvas class="canvas">
-  </canvas>
+  <div class="canvas-wrapper">
+    <RemoveBtn
+      v-if="cursorOnImage"
+      :offsetX="buttonOffsetX"
+      :offsetY="buttonOffsetY"
+      @remove-image="removeImage"
+    />
+    <canvas width="500" height="500" :id="canvasId" class="canvas">
+    </canvas>
+  </div>
 </template>
 
 <script lang="ts">
 import Vue from 'vue';
+import RemoveBtn from './RemoveButton.vue';
 
 export default Vue.extend({
   name: 'CanvasItem',
+  components: {
+    RemoveBtn,
+  },
   props: {
     images: {
       type: Array,
@@ -15,13 +27,28 @@ export default Vue.extend({
         return [];
       },
     },
+    canvasId: {
+      type: String,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      cursorOnImage: false,
+      imageId: '',
+      buttonOffsetX: -200,
+      buttonOffsetY: -200,
+    };
   },
   computed: {
     canvas(): HTMLCanvasElement {
-      return document.getElementById(this.$attrs.id) as HTMLCanvasElement;
+      return document.getElementById(this.canvasId) as HTMLCanvasElement;
     },
     ctx(): CanvasRenderingContext2D {
       return this.canvas.getContext('2d') as CanvasRenderingContext2D;
+    },
+    removeBtn(): HTMLButtonElement {
+      return document.getElementById('remove-btn') as HTMLButtonElement;
     },
   },
   watch: {
@@ -39,6 +66,22 @@ export default Vue.extend({
       e.stopPropagation();
       this.$emit('drop-image', e);
     });
+    this.canvas.addEventListener('mousemove', (e) => {
+      this.cursorOnImage = false;
+      for (let i = 0; i < this.images.length; i += 1) {
+        if (this.isCursorOnImage(
+          e.offsetX,
+          e.offsetY,
+          (this.images[i] as Image).x,
+          (this.images[i] as Image).y,
+        ) && this.canvasId === (this.images[i] as Image).container) {
+          this.cursorOnImage = true;
+          this.buttonOffsetX = (this.images[i] as Image).x + 113;
+          this.buttonOffsetY = (this.images[i] as Image).y + 15;
+          this.imageId = (this.images[i] as Image).id;
+        }
+      }
+    });
   },
   methods: {
     drawImages() {
@@ -51,8 +94,18 @@ export default Vue.extend({
         };
       });
     },
-    canvasImages() {
-      return (this.images as Image[]).filter((img: Image) => img.container === this.$attrs.id);
+    removeImage() {
+      this.$emit('remove-image', this.imageId);
+    },
+    canvasImages(): Image[] {
+      return (this.images as Image[]).filter((img: Image) => img.container === this.canvasId);
+    },
+    isCursorOnImage(mouseX: number, mouseY: number, imgX: number, imgY: number) {
+      if (mouseX > imgX && mouseX < imgX + 128
+      && mouseY > imgY && mouseY < imgY + 128) {
+        return true;
+      }
+      return false;
     },
   },
 });
@@ -76,8 +129,17 @@ interface Image {
 <style lang="scss">
 .canvas {
   position: relative;
-  border: 3px solid #888888;
   background-color: #eeeeee;
+  height: 100%;
+  width: 100%;
+  &-wrapper {
+    position: relative;
+    box-sizing: content-box;
+    border: 3px solid #888888;
+    width: 500px;
+    height: 500px;
+    display: inline-block;
+  }
 }
 
 </style>

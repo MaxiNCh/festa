@@ -16,8 +16,8 @@
   <div v-else-if="isDeleteAction" class="log__record">
     <span class="log__date">[{{time}}] - </span>
     <span class="log__object">{{this.action.objectName}} </span>
-    <span class="log__action">added to </span>
-    <span class="log__container">Container A</span>
+    <span class="log__action">removed from </span>
+    <span class="log__container">{{this.action.container1}} </span>
   </div>
 </template>
 

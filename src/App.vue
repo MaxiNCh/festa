@@ -9,22 +9,20 @@
     />
     <BlockItem :title="'Container A'">
       <CanvasItem
-        :id="'containerA'"
-        :width="500"
-        :height="500"
+        :canvasId="'containerA'"
         :images="images"
         @grab-image="grabImage"
         @drop-image="dropImage"
+        @remove-image="removeImage"
       />
     </BlockItem>
     <BlockItem :title="'Container B'">
       <CanvasItem
-        :id="'containerB'"
-        :width="500"
-        :height="500"
+        :canvasId="'containerB'"
         :images="images"
         @grab-image="grabImage"
         @drop-image="dropImage"
+        @remove-image="removeImage"
       />
     </BlockItem>
     <BlockItem :title="'Add new object'">
@@ -136,6 +134,20 @@ export default Vue.extend({
         };
         this.actions.push(newAction);
       });
+    },
+    removeImage(id: string) {
+      console.log('Remove image id: ', id);
+      const index = this.images.findIndex((img) => img.id === id);
+      const newAction = {
+        date: new Date(),
+        id: `_${Math.random().toString(36).substr(2, 9)}`,
+        objectName: this.images[index].name,
+        type: this.actionTypes[2],
+        container1: this.images[index].container,
+        container2: '',
+      };
+      this.actions.push(newAction);
+      this.images.splice(index, 1);
     },
     grabImage(e: MouseEvent) {
       /**
