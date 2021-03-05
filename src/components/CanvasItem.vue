@@ -67,6 +67,7 @@ export default Vue.extend({
       this.$emit('drop-image', e);
     });
     this.canvas.addEventListener('mousemove', (e) => {
+      this.canvas.style.cursor = 'default';
       this.cursorOnImage = false;
       for (let i = 0; i < this.images.length; i += 1) {
         if (this.isCursorOnImage(
@@ -79,6 +80,7 @@ export default Vue.extend({
           this.buttonOffsetX = (this.images[i] as Image).x + 113;
           this.buttonOffsetY = (this.images[i] as Image).y + 15;
           this.imageId = (this.images[i] as Image).id;
+          this.canvas.style.cursor = 'pointer';
         }
       }
     });
@@ -95,6 +97,7 @@ export default Vue.extend({
       });
     },
     removeImage() {
+      this.cursorOnImage = false;
       this.$emit('remove-image', this.imageId);
     },
     canvasImages(): Image[] {
