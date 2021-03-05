@@ -38,5 +38,6 @@ export default Vue.extend({
   opacity: 0.3;
   z-index: 1;
   pointer-events: none;
+  border: 1px dashed #222;
 }
 </style>

@@ -16,12 +16,6 @@ export default Vue.extend({
       },
     },
   },
-  data() {
-    return {
-      isGrabbing: false,
-      grabbedImage: null as null | Image,
-    };
-  },
   computed: {
     canvas(): HTMLCanvasElement {
       return document.getElementById(this.$attrs.id) as HTMLCanvasElement;
@@ -33,79 +27,48 @@ export default Vue.extend({
   watch: {
     images: {
       handler() {
+        console.log('watch...');
         this.drawImages();
       },
-      deep: true,
     },
   },
   mounted() {
     this.canvas.addEventListener('mousedown', (e) => {
-      this.emitGrabbedImage(e);
+      this.$emit('grab-image', e);
     });
     this.canvas.addEventListener('mouseup', (e) => {
+      e.stopPropagation();
       this.$emit('drop-image', e);
     });
   },
   methods: {
-    emitGrabbedImage(e: MouseEvent): void {
-      const images = this.filteredImages();
-      for (let i = images.length - 1; i >= 0; i -= 1) {
-        const image = images[i];
-        if (this.isMouseOnImage(e.offsetX, e.offsetY, image.x, image.y)) {
-          const grabbedId = images[i].id;
-          const coordinates = this.calculateCoordinates(images[i], e);
-          this.$emit('grab-image', { grabbedId, coordinates });
-          break;
-        }
-      }
-    },
     drawImages() {
       this.ctx.clearRect(0, 0, 500, 500);
-      this.filteredImages().forEach((img) => {
+      this.canvasImages().forEach((img) => {
         const imageEl = new Image();
-        imageEl.src = URL.createObjectURL(img.file);
+        imageEl.src = img.src;
         imageEl.onload = () => {
           this.ctx.drawImage(imageEl, img.x, img.y, 128, 128);
         };
       });
     },
-    filteredImages() {
+    canvasImages() {
       return (this.images as Image[]).filter((img: Image) => img.container === this.$attrs.id);
-    },
-    calculateCoordinates(image: Image, e: MouseEvent): {
-      x: number;
-      y: number;
-      shiftX: number;
-      shiftY: number;
-    } {
-      const shiftX = image.x - e.offsetX;
-      const shiftY = image.y - e.offsetY;
-      const x = e.pageX + shiftX;
-      const y = e.pageY + shiftY;
-      return {
-        x,
-        y,
-        shiftX,
-        shiftY,
-      };
-    },
-    isMouseOnImage(mouseX: number, mouseY: number, imgX: number, imgY: number) {
-      if (mouseX > imgX && mouseX < imgX + 128
-      && mouseY > imgY && mouseY < imgY + 128) {
-        return true;
-      }
-      return false;
     },
   },
 });
 
 interface Image {
   name: string;
-  file: File;
+  src: string;
   container: string;
+  id: string;
   x: number;
   y: number;
-  id: string;
+  newX: number;
+  newY: number;
+  shiftX: number;
+  shiftY: number;
   isGrabbed: boolean;
 }
 

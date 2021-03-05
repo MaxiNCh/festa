@@ -72,11 +72,11 @@ export default Vue.extend({
         for (let i = 0; i < this.files.length; i += 1) {
           const newImage: NewImage = {
             name: '',
-            file: {} as File,
+            src: '',
             container: '',
           };
           newImage.container = this.imageContainer;
-          newImage.file = this.files[i];
+          newImage.src = URL.createObjectURL(this.files[i]);
           if (this.files.length === 1 && i === 0) {
             newImage.name = this.imageName;
           } else {
@@ -93,7 +93,7 @@ export default Vue.extend({
 
 interface NewImage {
   name: string;
-  file: File;
+  src: string;
   container: string;
 }
 

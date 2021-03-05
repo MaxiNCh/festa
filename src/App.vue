@@ -1,10 +1,11 @@
 <template>
   <div id="app">
     <GrabbedImage
-      v-if="showImage"
-      :src="imageSrc"
-      :imageX="imageCoordinates.x"
-      :imageY="imageCoordinates.y"
+      v-for="image of this.grabbedImages"
+      :src="image.src"
+      :imageX="image.absX"
+      :imageY="image.absY"
+      :key="image.id"
     />
     <BlockItem :title="'Container A'">
       <CanvasItem
@@ -58,28 +59,47 @@ export default Vue.extend({
   data() {
     return {
       images: [] as Image[],
-      showImage: false,
-      imageSrc: '',
-      imageCoordinates: {
-        x: 0,
-        y: 0,
-      },
-      shiftImage: {
-        x: 0,
-        y: 0,
-      },
-      imageId: '',
+      isImageGrabbed: false,
+      isCtrlPressed: false,
+      isMoving: false,
     };
+  },
+  computed: {
+    grabbedImages(): Image[] {
+      return this.images.filter((img) => img.isGrabbed === true);
+    },
   },
   mounted() {
     document.addEventListener('mousemove', (e) => {
-      if (this.showImage === true) {
-        this.imageCoordinates.x = e.pageX + this.shiftImage.x;
-        this.imageCoordinates.y = e.pageY + this.shiftImage.y;
+      if (this.isCtrlPressed === false
+        || (this.isCtrlPressed === true && this.isImageGrabbed === true)) {
+        for (let i = 0; i < this.images.length; i += 1) {
+          if (this.images[i].isGrabbed) {
+            this.isMoving = true;
+            this.images[i].absX = e.pageX + this.images[i].shiftX;
+            this.images[i].absY = e.pageY + this.images[i].shiftY;
+          }
+        }
       }
     });
     document.addEventListener('mouseup', () => {
-      this.showImage = false;
+      for (let i = 0; i < this.images.length; i += 1) {
+        this.images[i].isGrabbed = false;
+      }
+      this.isImageGrabbed = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Control') {
+        this.isCtrlPressed = true;
+      }
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'Control') {
+        this.isCtrlPressed = false;
+        for (let i = 0; i < this.images.length; i += 1) {
+          this.images[i].isGrabbed = false;
+        }
+      }
     });
   },
   methods: {
@@ -88,37 +108,105 @@ export default Vue.extend({
         const x: number = Math.round((Math.random() * 372));
         const y: number = Math.round((Math.random() * 372));
         const id = `_${Math.random().toString(36).substr(2, 9)}`;
-        const newImage = {
-          ...image, x, y, id, isGrabbed: false,
+        const newImage: Image = {
+          ...image,
+          id,
+          x, // Coordinates of image in canvas
+          y, // Coordinates of image in canvas
+          absX: 0, // Absolute coordinates in document
+          absY: 0, // Absolute coordinates in document
+          shiftX: 0, // Shift of mouse relativly to image
+          shiftY: 0, // Shift of mouse relativly to image
+          isGrabbed: false,
         };
         this.images.push(newImage);
       });
     },
-    grabImage({ grabbedId, coordinates }: DataForGrabbedImage) {
-      const index = this.images.findIndex((img) => img.id === grabbedId);
-      this.imageSrc = URL.createObjectURL(this.images[index].file);
-      this.imageId = grabbedId;
-      this.imageCoordinates.x = coordinates.x;
-      this.imageCoordinates.y = coordinates.y;
-      this.shiftImage.x = coordinates.shiftX;
-      this.shiftImage.y = coordinates.shiftY;
-      setTimeout(() => {
-        this.showImage = true;
-      }, 0.1);
-    },
-    dropImage(e: MouseEvent) {
-      if (this.showImage === true) {
-        const images = [...this.images];
-        const movedImage: Image[] = images.splice(
-          images.findIndex((img) => img.id === this.imageId), 1,
-        );
-        movedImage[0].x = e.offsetX + this.shiftImage.x;
-        movedImage[0].y = e.offsetY + this.shiftImage.y;
-        movedImage[0].container = (e.target as HTMLElement).id;
-        images.push(movedImage[0]);
-        this.images = [...images];
+    grabImage(e: MouseEvent) {
+      /**
+       * Check if we already grabed an image.
+       * If so we should only grabe following images in the same container;
+       */
+      let container = '';
+      const indexC = this.images.findIndex((img) => img.isGrabbed);
+      if (indexC !== -1) {
+        container = this.images[indexC].container;
       }
-      this.showImage = false;
+      /**
+       * The index of images which we are grabbing next
+       */
+      let index = -1;
+      /**
+       * By this for loop we grab the only image, which is over other images,
+       * if several images simultaneously under the cursor.
+       */
+      for (let i = this.images.length - 1; i >= 0; i -= 1) {
+        if (this.isCursorOnImage(e.offsetX, e.offsetY, this.images[i].x, this.images[i].y)) {
+          if ((container === ''
+           || ((e.target as HTMLCanvasElement).id === container
+           && this.images[i].container === container))) {
+          // if ((container === '' || this.images[i].container === container)) {
+            this.isImageGrabbed = true;
+            if (this.images[i].isGrabbed !== true) {
+              this.updateCoordinates(e, i);
+              index = i;
+              break;
+            }
+          }
+        }
+      }
+      if (index !== -1) {
+        this.updateShift(e, index);
+      }
+    },
+    /**
+     * Update distance between cursor and images to keep initial order
+     */
+    updateShift(e: MouseEvent, index: number) {
+      for (let i = 0; i < this.images.length; i += 1) {
+        if (this.images[i].isGrabbed === true && index !== i) {
+          this.images[i].shiftX = this.images[i].x - e.offsetX;
+          this.images[i].shiftY = this.images[i].y - e.offsetY;
+          this.images[i].absX = e.pageX + this.images[i].shiftX;
+          this.images[i].absY = e.pageY + this.images[i].shiftY;
+        }
+      }
+    },
+    updateCoordinates(e: MouseEvent, i: number) {
+      this.images[i].isGrabbed = true;
+      this.images[i].shiftX = this.images[i].x - e.offsetX;
+      this.images[i].shiftY = this.images[i].y - e.offsetY;
+      this.images[i].absX = e.pageX + this.images[i].shiftX;
+      this.images[i].absY = e.pageY + this.images[i].shiftY;
+    },
+    /**
+     * Put object on canvas after moving
+     */
+    dropImage(e: MouseEvent) {
+      if (this.isCtrlPressed === false || this.isMoving === true) {
+        for (let i = 0; i < this.images.length; i += 1) {
+          if (this.images[i].isGrabbed) {
+            this.images[i].x = e.offsetX + this.images[i].shiftX;
+            this.images[i].y = e.offsetY + this.images[i].shiftY;
+            this.images[i].container = (e.target as HTMLElement).id;
+            this.images[i].isGrabbed = false;
+            this.images.push(this.images.splice(i, 1)[0]);
+            i -= 1;
+          }
+          this.isMoving = false;
+        }
+      }
+      this.isImageGrabbed = false;
+    },
+    /**
+     * Check if cursor over an image
+     */
+    isCursorOnImage(mouseX: number, mouseY: number, imgX: number, imgY: number) {
+      if (mouseX > imgX && mouseX < imgX + 128
+      && mouseY > imgY && mouseY < imgY + 128) {
+        return true;
+      }
+      return false;
     },
   },
 });
@@ -130,11 +218,15 @@ interface DataForGrabbedImage {
 
 interface Image {
   name: string;
-  file: File;
+  src: string;
   container: string;
+  id: string;
   x: number;
   y: number;
-  id: string;
+  absX: number;
+  absY: number;
+  shiftX: number;
+  shiftY: number;
   isGrabbed: boolean;
 }
 
