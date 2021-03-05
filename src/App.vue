@@ -34,7 +34,7 @@
       />
     </BlockItem>
     <BlockItem :title="'Log'">
-      <LogField></LogField>
+      <LogField :actions="actions"/>
     </BlockItem>
   </div>
 </template>
@@ -62,6 +62,12 @@ export default Vue.extend({
       isImageGrabbed: false,
       isCtrlPressed: false,
       isMoving: false,
+      actionTypes: [
+        'add',
+        'move',
+        'delete',
+      ],
+      actions: [] as Action[],
     };
   },
   computed: {
@@ -120,6 +126,15 @@ export default Vue.extend({
           isGrabbed: false,
         };
         this.images.push(newImage);
+        const newAction: Action = {
+          date: new Date(),
+          id: `_${Math.random().toString(36).substr(2, 9)}`,
+          objectName: newImage.name,
+          type: this.actionTypes[0],
+          container1: newImage.container,
+          container2: '',
+        };
+        this.actions.push(newAction);
       });
     },
     grabImage(e: MouseEvent) {
@@ -172,6 +187,9 @@ export default Vue.extend({
         }
       }
     },
+    /**
+     * Upadge absolute coordinages and shift of just grabbed image
+     */
     updateCoordinates(e: MouseEvent, i: number) {
       this.images[i].isGrabbed = true;
       this.images[i].shiftX = this.images[i].x - e.offsetX;
@@ -186,6 +204,14 @@ export default Vue.extend({
       if (this.isCtrlPressed === false || this.isMoving === true) {
         for (let i = 0; i < this.images.length; i += 1) {
           if (this.images[i].isGrabbed) {
+            // Check if container changes after moving and add move action
+            if (this.images[i].container !== (e.target as HTMLElement).id) {
+              this.addMoveAction(
+                this.images[i].name,
+                this.images[i].container,
+                (e.target as HTMLElement).id,
+              );
+            }
             this.images[i].x = e.offsetX + this.images[i].shiftX;
             this.images[i].y = e.offsetY + this.images[i].shiftY;
             this.images[i].container = (e.target as HTMLElement).id;
@@ -197,6 +223,17 @@ export default Vue.extend({
         }
       }
       this.isImageGrabbed = false;
+    },
+    addMoveAction(name: string, container1: string, container2: string) {
+      const newAction: Action = {
+        date: new Date(),
+        id: `_${Math.random().toString(36).substr(2, 9)}`,
+        objectName: name,
+        type: this.actionTypes[1],
+        container1,
+        container2,
+      };
+      this.actions.push(newAction);
     },
     /**
      * Check if cursor over an image
@@ -221,13 +258,22 @@ interface Image {
   src: string;
   container: string;
   id: string;
-  x: number;
-  y: number;
-  absX: number;
-  absY: number;
-  shiftX: number;
-  shiftY: number;
+  x: number; // Coordinates of image in canvas
+  y: number; // Coordinates of image in canvas
+  absX: number; // Absolute coordinates in document
+  absY: number; // Absolute coordinates in document
+  shiftY: number; // Shift of mouse relativly to image
+  shiftX: number; // Shift of mouse relativly to image
   isGrabbed: boolean;
+}
+
+interface Action {
+  date: Date;
+  id: string;
+  objectName: string;
+  type: string;
+  container1: string;
+  container2: string;
 }
 
 </script>

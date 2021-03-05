@@ -1,7 +1,21 @@
 <template>
-  <div class="log__record">
-    <span class="log__date">[12:34:45] - </span>
-    <span class="log__object">Object 1 </span>
+  <div v-if="isAddAction" class="log__record">
+    <span class="log__date">[{{time}}] - </span>
+    <span class="log__object">{{this.action.objectName}} </span>
+    <span class="log__action">added to </span>
+    <span class="log__container">{{this.action.container1}}</span>
+  </div>
+  <div v-else-if="isMoveAction" class="log__record">
+    <span class="log__date">[{{time}}] - </span>
+    <span class="log__object">{{this.action.objectName}} </span>
+    <span class="log__action">moved from </span>
+    <span class="log__container">{{this.action.container1}} </span>
+    <span class="log__action">to </span>
+    <span class="log__container">{{this.action.container2}}.</span>
+  </div>
+  <div v-else-if="isDeleteAction" class="log__record">
+    <span class="log__date">[{{time}}] - </span>
+    <span class="log__object">{{this.action.objectName}} </span>
     <span class="log__action">added to </span>
     <span class="log__container">Container A</span>
   </div>
@@ -12,6 +26,26 @@ import Vue from 'vue';
 
 export default Vue.extend({
   name: 'LogRecord',
+  props: {
+    action: {
+      type: Object,
+      required: true,
+    },
+  },
+  computed: {
+    isAddAction(): boolean {
+      return this.action.type === 'add';
+    },
+    isMoveAction(): boolean {
+      return this.action.type === 'move';
+    },
+    isDeleteAction(): boolean {
+      return this.action.type === 'delete';
+    },
+    time(): string {
+      return this.action.date.toLocaleTimeString();
+    },
+  },
 });
 </script>
 

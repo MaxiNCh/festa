@@ -27,7 +27,6 @@ export default Vue.extend({
   watch: {
     images: {
       handler() {
-        console.log('watch...');
         this.drawImages();
       },
     },

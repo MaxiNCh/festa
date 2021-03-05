@@ -1,6 +1,10 @@
 <template>
   <div class="log">
-    <LogRecord></LogRecord>
+    <LogRecord
+      v-for="action of this.reverseActions"
+      :action="action"
+      :key="action.id"
+    />
   </div>
 </template>
 
@@ -13,6 +17,17 @@ export default Vue.extend({
   components: {
     LogRecord,
   },
+  props: {
+    actions: {
+      type: Array,
+      required: true,
+    },
+  },
+  computed: {
+    reverseActions() {
+      return this.actions.slice().reverse();
+    },
+  },
 });
 </script>
 
@@ -20,8 +35,9 @@ export default Vue.extend({
   .log {
     border: 3px solid #888;
     width: 100%;
-    height: 100%;
+    height: 15rem;
     padding: 0.625rem;
     background: #fff;
+    overflow: scroll;
   }
 </style>
